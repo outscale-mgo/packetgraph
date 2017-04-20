@@ -28,13 +28,6 @@
 /* All registred bricks. */
 GList *pg_all_bricks;
 
-static void assert_brick_callback(struct pg_brick *brick)
-{
-	/* assert that the minimum of functions pointers are filled */
-	g_assert(brick->burst);
-	g_assert(brick->ops);
-}
-
 /**
  * This function is used to allocate the edges arrays
  *
@@ -191,7 +184,10 @@ struct pg_brick *pg_brick_new(const char *name,
 		goto fail_exit;
 	}
 
-	assert_brick_callback(brick);
+	/* assert that the minimum of functions pointers are filled */
+	g_assert(brick->burst);
+	g_assert(brick->ops);
+
 	/* TODO: register the brick */
 	if (alloc_edges(brick, errp) < 0)
 		goto fail_exit;
