@@ -152,6 +152,7 @@ static void test_graph_lifecycle(void)
 		g_assert(pg_graph_count(g) == 1);
 		g_assert(pg_graph_unsafe_pop(g, "que30") == que_3);
 		g_assert(pg_graph_count(g) == 0);
+		/* Push 10, 20,and 30 again */
 		g_assert(!pg_graph_push(g, nop_1, &error));
 		g_assert(!error);
 		g_assert(!pg_graph_push(g, nop_2, &error));
@@ -689,6 +690,68 @@ static void test_graph_complex_merge(void)
 	pg_graph_destroy(g_west);
 }
 
+static void test_graph_simple_split_merge(void)
+{
+	struct pg_graph *g_west, *g_east;
+	struct pg_error *error = NULL;
+	struct pg_brick *sw[2], *nop[6];
+	char *tmp;
+
+	for (int i = 0; i < 6; i++) {
+		tmp = g_strdup_printf("nop%i", i);
+		nop[i] = pg_nop_new(tmp, &error);
+		g_assert(nop[i]);
+		g_assert(!error);
+		g_free(tmp);
+	}
+	sw[0] = pg_switch_new("switch0", 3, 3, PG_WEST_SIDE, &error);
+	g_assert(sw[0]);
+	g_assert(!error);
+	sw[1] = pg_switch_new("switch1", 3, 3, PG_WEST_SIDE, &error);
+	g_assert(sw[1]);
+	g_assert(!error);
+
+	g_assert(!pg_brick_chained_links(&error, nop[0], sw[0],
+					 sw[1], nop[3]));
+	g_assert(!error);
+	g_assert(!pg_brick_chained_links(&error, nop[1], sw[0]));
+	g_assert(!error);
+	g_assert(!pg_brick_chained_links(&error, nop[2], sw[0]));
+	g_assert(!error);
+	g_assert(!pg_brick_chained_links(&error, sw[1], nop[4]));
+	g_assert(!error);
+	g_assert(!pg_brick_chained_links(&error, sw[1], nop[5]));
+	g_assert(!error);
+
+	g_west = pg_graph_new("graph-west", nop[0], &error);
+	g_assert(g_west && !error);
+	g_assert(pg_graph_count(g_west) == 8);
+
+	for (int i = 0; i < 6; i++) {
+		tmp = g_strdup_printf("nop%i", i);
+		g_assert(pg_graph_get(g_west, tmp) == nop[i]);
+		g_free(tmp);
+	}
+	g_assert(pg_graph_get(g_west, "switch0") == sw[0]);
+	g_assert(pg_brick_refcount(sw[0]) == 5);
+	g_east = pg_graph_simple_split(g_west, "graph-east", "switch0",
+				       "switch1", &error);
+	g_assert(!error);
+	g_assert(g_east);
+	g_assert(pg_graph_count(g_west) == 4);
+	g_assert(pg_graph_count(g_east) == 4);
+	g_assert(pg_graph_merge_by_bricks(g_west, "switch0", g_east,
+					  "switch1", &error) >= 0);
+	g_assert(!error);
+	g_assert(pg_graph_count(g_west) == 8);
+	g_assert(pg_graph_brick_destroy_branch(g_west, "switch0", "switch1",
+					       &error) >= 0);
+	g_assert(!error);
+	g_assert(pg_graph_count(g_west) == 4);
+	pg_graph_destroy(g_west);
+	g_assert(!error);
+}
+
 void test_graph(void)
 {
 	pg_test_add_func("/core/graph/lifecycle", test_graph_lifecycle);
@@ -697,4 +760,6 @@ void test_graph(void)
 	pg_test_add_func("/core/graph/poll", test_graph_poll);
 	pg_test_add_func("/core/graph/complex-merge", test_graph_complex_merge);
 	pg_test_add_func("/core/graph/split-merge", test_graph_split_merge);
+	pg_test_add_func("/core/graph/simple-split-merge",
+			 test_graph_simple_split_merge);
 }
