@@ -240,9 +240,9 @@ int pg_graph_count(struct pg_graph *graph)
 	return g_hash_table_size(graph->all);
 }
 
-int pg_graph_brick_destroy(struct pg_graph *graph,
-			   const char *brick_name,
-			   struct pg_error **error)
+int pg_graph_brick_destroy_unsafe(struct pg_graph *graph,
+				  const char *brick_name,
+				  struct pg_error **error)
 {
 	struct pg_brick *b = pg_graph_unsafe_pop(graph, brick_name);
 
@@ -253,6 +253,75 @@ int pg_graph_brick_destroy(struct pg_graph *graph,
 	pg_brick_destroy(b);
 	return 0;
 }
+
+int pg_graph_brick_destroy(struct pg_graph *graph,
+			   const char *brick_name,
+			   struct pg_error **error)
+{
+	struct pg_brick *b = pg_graph_get(graph, brick_name);
+	struct pg_brick *east;
+	struct pg_brick *west;
+
+	if (!b) {
+		*error = pg_error_new("Brick %s not found", brick_name);
+		return -1;
+	}
+	if (b->type == PG_MULTIPOLE && (b->sides[PG_EAST_SIDE].nb > 1 ||
+					b->sides[PG_WEST_SIDE].nb > 1)) {
+		*error = pg_error_new("Brick %s too much bricks linked",
+				      brick_name);
+		return -1;
+	}
+	graph_pop(graph, b);
+	if (b->type == PG_MONOPOLE) {
+		pg_brick_destroy(b);
+		return 0;
+	}
+	west = pg_brick_get_edge(b, PG_WEST_SIDE, 0)->link;
+	east = pg_brick_get_edge(b, PG_EAST_SIDE, 0)->link;
+	pg_brick_destroy(b);
+	if (west && east)
+		return pg_brick_link(west, east, error);
+	return 0;
+}
+
+static void destroy_branch(struct pg_graph *graph, struct pg_brick *survivor,
+			   struct pg_brick *to_destroy)
+{
+	PG_BRICK_FOREACH_EDGES(to_destroy, it) {
+		struct pg_brick *it_brick =
+			pg_brick_edge_iterator_get_edge(&it)->link;
+
+		if (it_brick != survivor)
+			destroy_branch(graph, to_destroy, it_brick);
+	}
+	graph_pop(graph, to_destroy);
+	pg_brick_destroy(to_destroy);
+}
+
+int pg_graph_brick_destroy_branch(struct pg_graph *graph,
+				  const char *brick_name,
+				  const char *neibour,
+				  struct pg_error **error)
+{
+	struct pg_brick *b = pg_graph_get(graph, brick_name);
+	struct pg_brick *neibour_b = pg_graph_get(graph, neibour);
+	struct pg_brick *east = pg_brick_get_edge(b, PG_EAST_SIDE, 0)->link;
+	struct pg_brick *west = pg_brick_get_edge(b, PG_WEST_SIDE, 0)->link;
+
+	if (!b) {
+		*error = pg_error_new("Brick %s not found", brick_name);
+		return -1;
+	}
+	if (east != neibour_b && west != neibour_b) {
+		*error = pg_error_new("'%s' must be adjacent to '%s'\n",
+				      neibour, brick_name);
+		return -1;
+	}
+	destroy_branch(graph, b, neibour_b);
+	return 0;
+}
+
 
 struct pg_graph *pg_graph_split(struct pg_graph *graph,
 				const char *east_graph_name,
@@ -283,6 +352,22 @@ struct pg_graph *pg_graph_split(struct pg_graph *graph,
 	if (pg_graph_explore_ptr(graph, qw, error) < 0)
 		return NULL;
 	return pg_graph_new(east_graph_name, qe, error);
+}
+
+struct pg_graph *pg_graph_simple_split(struct pg_graph *graph,
+				      const char *east_graph_name,
+				      const char *west_brick_name,
+				      const char *east_brick_name,
+				      struct pg_error **error)
+{
+	struct pg_brick *w = pg_graph_get(graph, west_brick_name);
+	struct pg_brick *e = pg_graph_get(graph, east_brick_name);
+
+	if (pg_brick_unlink_edge(w, e, error) < 0)
+		return NULL;
+	if (pg_graph_explore_ptr(graph, w, error) < 0)
+		return NULL;
+	return pg_graph_new(east_graph_name, e, error);
 }
 
 static inline GList *get_all_queues(struct pg_graph *g)
@@ -371,6 +456,25 @@ int pg_graph_merge(struct pg_graph *graph_west,
 
 	if (pg_graph_explore_ptr(graph_west, NULL, error) < 0)
 		return -1;
+	return 0;
+}
+
+
+int pg_graph_merge_by_bricks(struct pg_graph *graph1,
+			     const char *brick_name1,
+			     struct pg_graph *graph2,
+			     const char *brick_name2,
+			     struct pg_error **error)
+{
+	struct pg_brick *b1 = pg_graph_get(graph1, brick_name1);
+	struct pg_brick *b2 = pg_graph_get(graph2, brick_name2);
+
+	if (pg_brick_link(b1, b2, error) < 0)
+		return -1;
+	if (pg_graph_explore_ptr(graph1, b1, error) < 0)
+		return -1;
+	empty_graph(graph2);
+	pg_graph_destroy(graph2);
 	return 0;
 }
 

@@ -166,9 +166,27 @@ int pg_graph_count(struct pg_graph *graph);
  * @param	error is set in case of an error
  * @return	0 on success, -1 on error
  */
+int pg_graph_brick_destroy_unsafe(struct pg_graph *graph,
+				  const char *brick_name,
+				  struct pg_error **error);
+
+/**
+ * like pg_graph_brick_destroy_unsafe, work only with a brick
+ * that have at most 1 beibour on each side, and
+ * link west neibour to east neibour so the graph is not broken
+ */
 int pg_graph_brick_destroy(struct pg_graph *graph,
 			   const char *brick_name,
 			   struct pg_error **error);
+
+/**
+ * utterly annilate @neibour, and each bricks like to it which is not @brick,
+ * only sand will stay.
+ */
+int pg_graph_brick_destroy_branch(struct pg_graph *graph,
+				  const char *brick,
+				  const char *neibour,
+				  struct pg_error **error);
 
 /**
  * Split a graph in two separated graph.
@@ -202,6 +220,12 @@ struct pg_graph *pg_graph_split(struct pg_graph *graph,
 				const char *east_queue_name,
 				struct pg_error **error);
 
+struct pg_graph *pg_graph_simple_split(struct pg_graph *graph,
+				       const char *east_graph_name,
+				       const char *west_brick_name,
+				       const char *east_brick_name,
+				       struct pg_error **error);
+
 /**
  * Merge two graphs into one.
  * Remove all queues between two graph and merge the whole graph into one.
@@ -215,6 +239,12 @@ struct pg_graph *pg_graph_split(struct pg_graph *graph,
 int pg_graph_merge(struct pg_graph *graph1,
 		   struct pg_graph *graph2,
 		   struct pg_error **error);
+
+int pg_graph_merge_by_bricks(struct pg_graph *graph1,
+			     const char *brick_name1,
+			     struct pg_graph *graph2,
+			     const char *brick_name2,
+			     struct pg_error **error);
 
 /**
  * Write a dot (graphviz) graph to a file descriptor from a graph.
