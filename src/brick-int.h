@@ -307,6 +307,12 @@ pg_brick_edge_iterator_init(struct pg_brick_edge_iterator *it,
 		pg_brick_edge_iterator_next(it);
 }
 
+static inline struct pg_brick_edge *
+pg_brick_edge_iterator_get_edge(struct pg_brick_edge_iterator *it)
+{
+	return pg_brick_get_edge(it->brick, it->side, it->edge);
+}
+
 static inline bool
 pg_brick_edge_iterator_is_end(struct pg_brick_edge_iterator *it)
 {
