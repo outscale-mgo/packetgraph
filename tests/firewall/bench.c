@@ -24,6 +24,7 @@ int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
 	g_assert(pg_start(argc, argv) >= 0);
+#ifndef _NPF_NO_THREAD
 	pg_npf_nworkers = 40;
 	test_benchmark_firewall(argc, argv);
 	pg_npf_nworkers = 4;
@@ -34,6 +35,7 @@ int main(int argc, char **argv)
 	test_benchmark_firewall(argc, argv);
 	pg_npf_nworkers = 1;
 	test_benchmark_firewall(argc, argv);
+#endif
 	pg_npf_nworkers = 0;
 	test_benchmark_firewall(argc, argv);
 	int r = g_test_run();

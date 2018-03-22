@@ -4,6 +4,10 @@ if PG_ASAN
 PG_ASAN_CFLAGS= -fsanitize=address -fsanitize=leak -fsanitize=undefined -fno-sanitize=alignment --param asan-globals=0
 endif
 
+if PG_NPF_NO_THREAD
+NPF_THREAD_NO_FLAGS= -D_NPF_NO_THREAD
+endif
+
 # No wildcard
 # https://www.gnu.org/software/automake/manual/html_node/Wildcards.html
 libpacketgraph_la_SOURCES = \
@@ -73,7 +77,7 @@ pkginclude_HEADERS = \
 libpacketgraph_la_LIBADD = $(RTE_SDK_LIBS) $(GLIB_LIBS)
 # FIXME '^pg_[^_]' does not take all symbols needed (i.e. __pg_error_*)
 libpacketgraph_la_LDFLAGS = -version-info 17:5:0 -export-symbols-regex 'pg_[^_]' -no-undefined
-libpacketgraph_la_CFLAGS = -march=core-avx-i -mtune=core-avx-i -fmessage-length=0 -Werror -Wall -Wextra -Wwrite-strings -Winit-self -Wpointer-arith -Wstrict-aliasing -Wformat=2 -Wmissing-declarations -Wmissing-include-dirs -Wno-unused-parameter -Wuninitialized -Wold-style-definition -Wstrict-prototypes -Wmissing-prototypes -fPIC -std=gnu11 $(GLIB_CFLAGS) $(RTE_SDK_CFLAGS) -I$(srcdir)/include -I$(srcdir)/src -Wno-implicite-fallthrough -Wno-unknown-warning-option $(PG_ASAN_CFLAGS)
+libpacketgraph_la_CFLAGS = -march=core-avx-i -mtune=core-avx-i -fmessage-length=0 -Werror -Wall -Wextra -Wwrite-strings -Winit-self -Wpointer-arith -Wstrict-aliasing -Wformat=2 -Wmissing-declarations -Wmissing-include-dirs -Wno-unused-parameter -Wuninitialized -Wold-style-definition -Wstrict-prototypes -Wmissing-prototypes -fPIC -std=gnu11 $(GLIB_CFLAGS) $(RTE_SDK_CFLAGS) -I$(srcdir)/include -I$(srcdir)/src -Wno-implicite-fallthrough -Wno-unknown-warning-option $(PG_ASAN_CFLAGS ) $(NPF_THREAD_NO_FLAGS)
 
 noinst_LTLIBRARIES =
 

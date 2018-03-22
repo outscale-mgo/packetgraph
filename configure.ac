@@ -25,6 +25,11 @@ AC_ARG_WITH(asan, AS_HELP_STRING([--with-asan], [Build asan]))
 AM_CONDITIONAL([PG_ASAN], [test "x$with_asan" = "xyes"])
 AS_IF([test "x$with_asan" = "xyes"], [AC_MSG_RESULT([yes])], [AC_MSG_RESULT([no])])
 
+AC_MSG_CHECKING([packetgraph npf_no_thread])
+AC_ARG_WITH(asan, AS_HELP_STRING([--with-npf-no-thread], [Build npf-no-thread]))
+AM_CONDITIONAL([PG_NPF_NO_THREAD], [test "x$with_npf_no_thread" = "xyes"])
+AS_IF([test "x$with_npf_no_thread" = "xyes"], [AC_MSG_RESULT([yes])], [AC_MSG_RESULT([no])])
+
 AC_MSG_CHECKING([packetgraph build npf])
 AC_ARG_WITH(build-npf, AS_HELP_STRING([--without-build-npf], [Avoid building npf and sub-libraries]))
 AM_CONDITIONAL([PG_BUILD_NPF], [test "x$with_build_npf" != "xno"])
