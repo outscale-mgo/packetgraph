@@ -65,6 +65,23 @@ int pg_firewall_rule_add(struct pg_brick *brick, const char *filter,
 			 struct pg_error **errp);
 
 /**
+ * Add a new nat in the firewall
+ *
+ * @param   brick the brick
+ * @param   ip nat ipv4
+ * @param   mask nat mask
+ * @param   port nat port
+ * @param   side side where the nat will occurs, you can use SIDE_MAX
+ *          to specify both sides.
+ * @param   errp is set in case of an error
+ * @return  0 if the rule has been correctly built and added -1 on error
+ *          and errp is set.
+ */
+int pg_firewall_nat_add(struct pg_brick *brick, uint32_t ip,
+			uint8_t mask, uint16_t port, enum pg_side side,
+			struct pg_error **errp);
+
+/**
  * Manually call the firewall garbage collector.
  * NPF firewall tracks all connexions when stateful.
  * if PG_NO_CONN_WORKER flag has not been set, we must manually call the garbage

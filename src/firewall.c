@@ -40,6 +40,7 @@ struct pg_firewall_state {
 	npf_t *npf;
 	struct ifnet *ifp;
 	GList *rules;
+	GList *nats;
 };
 
 struct pg_firewall_config {
@@ -122,6 +123,24 @@ int pg_firewall_rule_add(struct pg_brick *brick, const char *filter,
 	return 0;
 }
 
+int pg_firewall_nat_add(struct pg_brick *brick, uint32_t ip,
+			uint8_t mask, uint16_t port, enum pg_side side,
+			struct pg_error **errp)
+{
+	struct pg_firewall_state *state;
+	nl_nat_t *nat;
+	npf_addr_t addr = {.word32 = {ip, 0, 0, 0}};
+	int options = 0;
+
+	state = pg_brick_get_state(brick, struct pg_firewall_state);
+	options |= firewall_side_to_npf_rule(side);
+	nat = npf_nat_create(options, 0, "firewall",
+			     AF_INET, &addr, mask, port);
+	g_assert(nat);
+	state->nats = g_list_append(state->nats, nat);
+	return 0;
+}
+
 void pg_firewall_rule_flush_side(struct pg_brick *brick, enum pg_side side)
 {
 	struct pg_firewall_state *state;
@@ -172,12 +191,18 @@ static int firewall_reload_internal(struct pg_firewall_state *state,
 	GList *it;
 
 	config = npf_config_create();
+	it = state->nats;
+	while (it != NULL) {
+		npf_nat_insert(config, it->data, 0);
+		it = g_list_next(it);
+	}
 
 	it = state->rules;
 	while (it != NULL) {
 		npf_rule_insert(config, NULL, it->data);
 		it = g_list_next(it);
 	}
+
 
 	config_build = npf_config_build(config);
 	npf_config_destroy(config);
@@ -307,6 +332,7 @@ static int firewall_init(struct pg_brick *brick,
 	}
 	state->npf = npf;
 	state->rules = NULL;
+	state->nats = NULL;
 	++nb_firewall;
 	return firewall_reload_internal(state, errp);
 }

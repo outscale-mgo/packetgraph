@@ -25,10 +25,13 @@
 
 #include <rte_config.h>
 #include <rte_ether.h>
+#include <rte_ip.h>
+#include <rte_udp.h>
 #include <pcap/pcap.h>
 
 #include <packetgraph/packetgraph.h>
 #include "utils/tests.h"
+#include "utils/ip.h"
 #include <packetgraph/firewall.h>
 #include "brick-int.h"
 #include "collect.h"
@@ -798,6 +801,53 @@ static void test_firewall_lifecyle(void)
 	pg_brick_destroy(fw);
 }
 
+static void test_firewall_nat(void)
+{
+	struct pg_error *error = NULL;
+	struct pg_brick *col_west, *col_east;
+	struct pg_brick *fw = pg_firewall_new("fw", PG_NONE, &error);
+	struct rte_mbuf **pkts = pg_packets_create(1), **tmp_pkts;
+        /* mac is not send to npf, so we don't care what's inside */
+	struct ether_addr mac = {{0, 0, 0, 0, 0, 0}};
+	const char *rule = "udp";
+	uint32_t ip, ip_dst;
+	uint64_t tmp_mask;
+
+	inet_pton(AF_INET, "42.0.0.1", &ip);
+	inet_pton(AF_INET, "42.0.0.2", &ip_dst);
+	pg_packets_append_ether(pkts, 1, &mac, &mac, ETHER_TYPE_IPv4);
+	pg_packets_append_ipv4(pkts, 1, ip, ip_dst, sizeof(struct udp_hdr) + 10,
+			       PG_UDP_PROTOCOL_NUMBER);
+	pg_packets_append_udp(pkts, 1, 50000, 50001, 10);
+	g_assert(!error);
+	col_west = pg_collect_new("col_west", &error);
+	g_assert(!error);
+	col_east = pg_collect_new("col_east", &error);
+	g_assert(!error);
+	pg_brick_chained_links(&error, col_west, fw, col_east);
+	g_assert(!error);
+
+	inet_pton(AF_INET, "10.0.0.1", &ip);
+	g_assert(!pg_firewall_nat_add(fw, ip, 32, 8080, PG_WEST_SIDE, &error));
+	g_assert(!pg_firewall_rule_add(fw, rule, PG_WEST_SIDE, 0,
+				       &error));
+	g_assert(!error);
+
+	g_assert(!pg_firewall_reload(fw, &error));
+	g_assert(!error);
+
+	pg_brick_burst_to_east(fw, 0, pkts, 1, &error);
+	g_assert(!error);
+
+	tmp_pkts = pg_brick_west_burst_get(col_east, &tmp_mask, &error);
+	printf("%lx\n", tmp_mask);
+	g_assert(tmp_mask == 1);
+	/* check ip has been nat */
+	pg_brick_destroy(fw);
+	pg_packets_free(pkts, 1);
+	free(pkts);
+}
+
 static void test_firewall(void)
 {
 	pg_test_add_func("/firewall/lifecycle", test_firewall_lifecyle);
@@ -810,6 +860,7 @@ static void test_firewall(void)
 	pg_test_add_func("/firewall/tcp6", test_firewall_tcp6);
 	pg_test_add_func("/firewall/exotic", test_firewall_exotic);
 	pg_test_add_func("/firewall/empty_rules", test_firewall_empty_rules);
+	pg_test_add_func("/firewall/nat", test_firewall_nat);
 }
 
 int main(int argc, char **argv)
