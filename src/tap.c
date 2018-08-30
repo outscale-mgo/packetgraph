@@ -95,13 +95,26 @@ static int tap_burst(struct pg_brick *brick, enum pg_side from,
 	for (; it_mask;) {
 		pg_low_bit_iterate(it_mask, i);
 		struct rte_mbuf *packet = pkts[i];
-		char *data = rte_pktmbuf_mtod(packet, char *);
-		int len = rte_pktmbuf_pkt_len(packet);
 
 		/* write data. */
-		if (unlikely(write(fd, data, len) < 0)) {
-			*errp = pg_error_new("%s", strerror(errno));
-			return -1;
+		if (packet->nb_segs > 1) {
+			struct iovec iov[64];
+			int i;
+
+			for (i = 0; i < packet->nb_segs; ++i) {
+				iov[i].iov_base = rte_pktmbuf_mtod(packet,
+								   char *);
+				iov[i].iov_len = rte_pktmbuf_data_len(packet);
+				packet = packet->next;
+			}
+			if (unlikely(writev(fd, iov, i) < 0))
+				goto error;
+		} else {
+			char *data = rte_pktmbuf_mtod(packet, char *);
+			int len = rte_pktmbuf_pkt_len(packet);
+
+			if (unlikely(write(fd, data, len) < 0))
+				goto error;
 		}
 	}
 
@@ -114,6 +127,9 @@ static int tap_burst(struct pg_brick *brick, enum pg_side from,
 	}
 #endif /* #ifdef PG_TAP_BENCH */
 	return 0;
+error:
+	*errp = pg_error_new("%s", strerror(errno));
+	return -1;
 }
 
 static int tap_poll(struct pg_brick *brick, uint16_t *pkts_cnt,
