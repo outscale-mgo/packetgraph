@@ -1,3 +1,4 @@
+
 /* Copyright 2015 Nodalink EURL
  *
  * This file is part of Packetgraph.
@@ -98,17 +99,17 @@ int pg_util_spawn_qemu(const char *socket_path_0,
 				  " -netdev type=vhost-user,id=mynet0,",
 				  "chardev=char0,vhostforce",
 				  " -device virtio-net-pci,mac=%s",
-				  ",netdev=mynet0"), socket_path_0, mac_1);
+				  ",netdev=mynet0"), socket_path_0, mac_0);
 		argv_sock_0 = argv_sock_0_t;
 	}
 
 	if (socket_path_1) {
 		argv_sock_1_t = g_strdup_printf(
-			PG_STRCAT(" -chardev socket,id=char0,path=%s",
-				  " -netdev type=vhost-user,id=mynet0,",
-				  "chardev=char0,vhostforce",
+			PG_STRCAT(" -chardev socket,id=char1,path=%s",
+				  " -netdev type=vhost-user,id=mynet1,",
+				  "chardev=char1,vhostforce",
 				  " -device virtio-net-pci,mac=%s",
-				  ",netdev=mynet0"), socket_path_1, mac_1);
+				  ",netdev=mynet1"), socket_path_1, mac_1);
 		argv_sock_1 = argv_sock_1_t;
 	}
 
@@ -126,6 +127,7 @@ int pg_util_spawn_qemu(const char *socket_path_0,
 		vm_id + 65000, argv_sock_0, argv_sock_1);
 
 
+	printf("%s\n", argv_qemu);
 	argv = g_strsplit(argv_qemu, " ", 0);
 
 	g_assert(g_spawn_async(NULL, argv, NULL,
@@ -135,12 +137,12 @@ int pg_util_spawn_qemu(const char *socket_path_0,
 			       NULL, &child_pid, &error));
 	g_assert(!error);
 
-	ssh_cmd = g_strdup_printf("%s%s%s%u%s%s%s",
-				  "ssh root@localhost -q -i ", vm_key_path,
-				  " -p ", vm_id + 65000,
-				  " -oConnectTimeout=1 ",
-				  "-oStrictHostKeyChecking=no ",
-				  "ls");
+	ssh_cmd = g_strdup_printf(
+		PG_FMT("ssh root@localhost -q -i ", vm_key_path,
+		       " -p ", vm_id + 65000,
+		       " -oConnectTimeout=1 ",
+		       "-oStrictHostKeyChecking=no ",
+		       "ls"));
 	if (pg_util_cmdloop(ssh_cmd, 10 * 60) < 0)
 		*errp = pg_error_new("qemu spawn failed");
 

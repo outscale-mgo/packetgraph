@@ -32,6 +32,87 @@ static inline void pg_autofree_(void *p)
 #define pg_autofree				\
 	__attribute__((__cleanup__(pg_autofree_)))
 
+#define PG_CAT(a, b) a ## b
+
+#define PG_FMT_MOD1(append, v)				\
+	_Generic(v, int : append"%d",			\
+		 unsigned int : append"%u",		\
+		 const char * : append"%s",		\
+		 char * : append"%s"			\
+		)
+
+#define PG_FMT_MOD2(append, a, b)				\
+	_Generic(a,						\
+		 int : PG_FMT_MOD1(append"%d",b),		\
+		 unsigned : PG_FMT_MOD1(append"%u",b),		\
+		 const char * : PG_FMT_MOD1(append"%s",b),	\
+		 char * : PG_FMT_MOD1(append"%s",b)		\
+		)
+
+#define PG_FMT_MOD3(append, a, b, c)					\
+	_Generic(a,							\
+		 int : PG_FMT_MOD2(append"%d",b, c),			\
+		 unsigned : PG_FMT_MOD2(append"%u",b, c),		\
+		 const char * : PG_FMT_MOD2(append"%s",b, c),		\
+		 char * : PG_FMT_MOD2(append"%s",b, c)			\
+		)
+
+#define PG_FMT_MOD4(append, a, b, c, d)					\
+	_Generic(a,							\
+		 int : PG_FMT_MOD3(append"%d",b, c, d),			\
+		 unsigned : PG_FMT_MOD3(append"%u",b, c, d),		\
+		 const char * : PG_FMT_MOD3(append"%s",b, c, d),	\
+		 char * : PG_FMT_MOD3(append"%s",b, c, d)		\
+		)
+
+#define PG_FMT_MOD5(append, a, b, c, d, e)				\
+	_Generic(a,							\
+		 int : PG_FMT_MOD4(append"%d",b, c, d, e),		\
+		 unsigned : PG_FMT_MOD4(append"%u",b, c, d, e),		\
+		 const char * : PG_FMT_MOD4(append"%s",b, c, d, e),	\
+		 char * : PG_FMT_MOD4(append"%s",b, c, d, e)		\
+		)
+
+#define PG_FMT_MOD6(append, a, b, c, d, e, f)				\
+	_Generic(a,							\
+		 int : PG_FMT_MOD5(append"%d",b, c, d, e, f),		\
+		 unsigned : PG_FMT_MOD5(append"%u",b, c, d, e, f),	\
+		 const char * : PG_FMT_MOD5(append"%s",b, c, d, e, f),	\
+		 char * : PG_FMT_MOD5(append"%s",b, c, d, e, f)		\
+		)
+
+#define PG_FMT_MOD7(append, a, b, c, d, e, f, g)			\
+	_Generic(a,							\
+		 int : PG_FMT_MOD6(append"%d",b, c, d, e, f, g),	\
+		 unsigned : PG_FMT_MOD6(append"%u",b, c, d, e, f, g),	\
+		 const char * : PG_FMT_MOD6(append"%s",b, c, d, e, f, g), \
+		 char * : PG_FMT_MOD6(append"%s",b, c, d, e, f, g)	\
+		)
+
+
+#define PG_FMT1(a) PG_FMT_MOD1("", a), a
+
+#define PG_FMT2(a, b) PG_FMT_MOD2("", a, b), a, b
+
+#define PG_FMT3(a, b, c)  PG_FMT_MOD3("", a, b, c), a, b, c
+
+#define PG_FMT4(a, b, c, d) PG_FMT_MOD4("", a, b, c, d), a, b, c, d
+
+#define PG_FMT5(a, b, c, d, e) PG_FMT_MOD5("", a, b, c, d, e), a, b, c, d, e
+
+#define PG_FMT6(a, b, c, d, e, f)		\
+	PG_FMT_MOD6("", a, b, c, d, e, f),	\
+		a, b, c, d, e f
+
+#define PG_FMT7(a, b, c, d, e, f, g)		\
+	PG_FMT_MOD7("", a, b, c, d, e, f, g),	\
+		a, b, c, d, e, f, g
+
+#define PG_FMT_(nb, ...) PG_CAT(PG_FMT, nb) (__VA_ARGS__)	\
+
+#define PG_FMT(...)						\
+	PG_FMT_(PG_GET_ARG_COUNT(__VA_ARGS__), __VA_ARGS__)
+
 
 #define PG_STRCAT2(a, b) (a b)
 #define PG_STRCAT3(a, b, c) (a b c)
@@ -42,8 +123,6 @@ static inline void pg_autofree_(void *p)
 #define PG_STRCAT8(a, b, c, d, e, f, g, h) (a b c d e f g h)
 #define PG_STRCAT9(a, b, c, d, e, f, g, h, i) (a b c d e f g h i)
 #define PG_STRCAT10(a, b, c, d, e, f, g, h, i, j) (a b c d e f g h i j)
-
-#define PG_CAT(a, b) a ## b
 
 #define PG_STRCAT_(nb, ...) (PG_CAT(PG_STRCAT, nb) (__VA_ARGS__))	\
 

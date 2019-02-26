@@ -57,9 +57,6 @@ struct pg_vhost_socket {
 
 #ifdef PG_VHOST_FASTER_YET_BROKEN_POLL
 
-#define VHOST_LOCK_CHECK			\
-	int check_atomic;			\
-	int check_counter;
 
 #define VHOST_DEC_CHECK_COUNTER(state) do {				\
 		state->check_counter -= 1;				\
@@ -67,7 +64,7 @@ struct pg_vhost_socket {
 			state->check_atomic = 1024;			\
 			rte_atomic32_clear(&state->allow_queuing);	\
 		}							\
-	} while (0);
+	} while (0)
 
 
 #define VHOST_GET_CHECK_ATOMIC(state) state->check_atomic
@@ -75,7 +72,6 @@ struct pg_vhost_socket {
 #else
 #define VHOST_DEC_CHECK_COUNTER(state) {}
 #define VHOST_GET_CHECK_ATOMIC(state) 1
-#define VHOST_LOCK_CHECK
 #endif /* PG_VHOST_FASTER_YET_BROKEN_POLL */
 
 struct pg_vhost_state {
@@ -83,12 +79,15 @@ struct pg_vhost_state {
 	enum pg_side output;
 	struct pg_vhost_socket *socket;
 	rte_atomic32_t allow_queuing;
-	VHOST_LOCK_CHECK;
 	int vid;
 	struct rte_mbuf *in[PG_MAX_PKTS_BURST];
 	struct rte_mbuf *out[PG_MAX_PKTS_BURST];
 	rte_atomic64_t tx_bytes; /* TX: [vhost] --> VM */
 	rte_atomic64_t rx_bytes; /* RX: [vhost] <-- VM */
+#ifdef PG_VHOST_FASTER_YET_BROKEN_POLL
+	int check_atomic;
+	int check_counter;
+#endif
 };
 
 static int new_vm(int dev);

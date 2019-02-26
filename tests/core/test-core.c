@@ -56,6 +56,7 @@ static void test_brick_core_simple_lifecycle(void)
 	pg_error_free(error);
 	error = NULL;
 
+	printf(PG_FMT(1, " world\n"));
 	pg_brick_config_free(config);
 }
 

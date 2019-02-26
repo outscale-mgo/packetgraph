@@ -706,6 +706,7 @@ static void qemu_duo_new(struct qemu_duo_test_params *p)
 						    glob_vm_key_path,
 						    glob_hugepages_path,
 						    &error);
+		pg_error_print(error);
 		g_free(mac);
 		g_assert(!error);
 		g_assert(p->qemu_pid[i]);
@@ -731,8 +732,8 @@ static void qemu_duo_destroy(struct qemu_duo_test_params *p)
 	void *ret;
 
 	for (int i = 0; i < 2; i++) {
-		pg_vhost_unlock(p->vhost[i]);
-		kill(p->qemu_pid[i], SIGKILL);
+		pg_vhost_request_remove(p->vhost[i]);
+		kill(p->qemu_pid[i], SIGQUIT);
 		waitpid(p->qemu_pid[i], &exit_status, 0);
 	}
 	p->stop = 1;
