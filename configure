@@ -61,6 +61,9 @@ function check_option {
 		exit
 	elif [ "$1"  == "--verbose" ]; then
 		echo add verbose
+	elif [ "$1"  == "--prefix" ]; then
+	    export PREFIX="$2"
+	    return 2
 	elif [ "$1"  == "--no-verbose" ]; then
 		echo remove verbose
 	elif [ "$1"  == "--print" ]; then
@@ -211,7 +214,7 @@ fi
 var_add PG_NAME "libpacketgraph"
 var_add GLIB_HEADERS "$(pkg-config --cflags glib-2.0)"
 var_add GLIB_LIBS "$(pkg-config --libs glib-2.0)"
-
+var_add PREFIX "/usr/local/"
 if [ ! "$RTE_SDK" ]; then
 	echo
 	(>&2 echo "ERROR: RTE_SDK not set")
