@@ -130,12 +130,21 @@ ifdef EXAMPLE
 	$(MAKE) examplefclean
 endif
 
-install:
+install: $(PG_NAME)
 	mkdir -p $(PREFIX)/lib/
 	@cp -v $(PG_NAME).a $(PREFIX)/lib/
 	@cp -v $(PG_NAME).so* $(PREFIX)/lib/
 	@cp -v $(PG_NAME)-dev.a* $(PREFIX)/lib/
 	@cp -v $(PG_NAME)-dev.so* $(PREFIX)/lib/
+	@cp -v libbpfjit.a $(PREFIX)/lib/
+	@cp -v libcdb.a $(PREFIX)/lib/
+	@cp -v liblpm.a $(PREFIX)/lib/
+	@cp -v libnpf.a $(PREFIX)/lib/
+	@cp -v libnpfkern.a $(PREFIX)/lib/
+	@cp -v libnvlist.a $(PREFIX)/lib/
+	@cp -v libqsbr.a $(PREFIX)/lib/
+	@cp -v libsljit.a $(PREFIX)/lib/
+	@cp -v libthmap.a $(PREFIX)/lib/
 
 uninstall:
 	@rm -fv $(PREFIX)/lib/$(PG_NAME)* # what could posibly go wrong ?
