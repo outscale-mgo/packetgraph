@@ -46,6 +46,10 @@ struct ether_addr;
  */
 struct ether_addr *pg_vtep_get_mac(const struct pg_brick *brick);
 
+void pg_vtep4_cleanup_mac(struct pg_brick *brick, int port_id);
+void pg_vtep6_cleanup_mac(struct pg_brick *brick, int port_id);
+
+
 /**
  * Add a VNI to the VTEP
  *
@@ -129,6 +133,13 @@ inline int pg_vtep_add_vni(struct pg_brick *brick,
  */
 int pg_vtep_add_mac(struct pg_brick *brick, uint32_t vni,
 		    struct ether_addr *mac, struct pg_error **errp);
+
+/**
+ * Like what the function name say
+ * Arguments are are the same as pg_vtep_add_mac
+ */
+int pg_vtep_unset_mac(struct pg_brick *brick, uint32_t vni,
+		      struct ether_addr *mac, struct pg_error **errp);
 
 /**
  * Create a new vtep
