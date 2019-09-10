@@ -941,10 +941,13 @@ static void test_mac_table(void)
 	m.mac = 4;
 	pg_mac_table_ptr_set(&ma, m, &val);
 	PG_MAC_TABLE_FOREACH_PTR(&ma, k, uint32_t, val_check) {
-		g_assert(*val_check == 1337);
+		printf("wololo %p %lx\n", val_check, k.mac);
+		g_assert(val_check && *val_check == 1337);
 		++i;
 		g_assert(i < 3);
 	}
+	printf("II: %ld\n", i);
+	printf("length: %zd \n", pg_mac_table_compute_length(&ma));
 	g_assert(i == 2);
 	m.mac = 0;
 	pg_mac_table_ptr_unset(&ma, m);
@@ -957,7 +960,9 @@ static void test_mac_table(void)
 	g_assert(*(uint32_t *)pg_mac_table_ptr_get(&ma, m) == 1337);
 	m.mac = 0;
 	g_assert(!pg_mac_table_ptr_get(&ma, m));
+	printf("length: %zd \n", pg_mac_table_compute_length(&ma));
 	PG_MAC_TABLE_FOREACH_PTR(&ma, k2, uint32_t, val_check2) {
+		printf("hej\n");
 		g_assert(*val_check == 1337);
 		++i;
 		g_assert(i < 4);
@@ -981,6 +986,9 @@ static void test_mac_table(void)
 	}
 
 	PG_MAC_TABLE_FOREACH_PTR(&ma, k4, uint32_t, val_check4) {
+		printf("heja: %ld  - %ld - %lx %ld\n",
+		       (uintptr_t)val_check4, i, k4.mac,
+		       (uintptr_t)pg_mac_table_ptr_get(&ma, k4));
 		g_assert((uintptr_t)val_check4 == i);
 		++i;
 	}
