@@ -35,17 +35,14 @@ struct pg_udp_port_sw_info {
  * Create a new hub brick
  *
  * @param	name name of the brick
- * @param	west_max maximum of links you can connect on the west side
- * @param	east_max maximum of links you can connect on the east side
  * @param	ports array of pg_udp_port_sw_info that describe where
  *		packets goes
+ * @param	output side where packets need filtering
  * @param	errp is set in case of an error
  * @return	a pointer to a brick structure on success, NULL on error
  */
 PG_WARN_UNUSED
 struct pg_brick *pg_udp_port_switch_new(const char *name,
-					uint32_t west_max,
-					uint32_t east_max,
 					struct pg_udp_port_sw_info ports[],
 					int nb_filters,
 					enum pg_side output,
